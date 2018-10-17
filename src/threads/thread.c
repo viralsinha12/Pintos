@@ -162,59 +162,56 @@ bool earliest_sleep_time_thread (const struct list_elem *a, const struct list_el
  return thread_a->thread_wakeup_time < thread_b->thread_wakeup_time;
 }
 /* Puts thread in sleeping queue*/
-void thread_wake_from_sleep_queue ()
+void thread_put_in_sleep_queue(int64_t wakeup_ticks, struct thread *t)
 {
-    while(earliest_sleeping_thread_wakeup_time>0)
-    {
+//intr_disable();
+lock_acquire(&thread_sleep);
+t->thread_wakeup_time=wakeup_ticks;
 
+if (earliest_sleeping_thread_wakeup_time==0)
+{
+	list_push_front(&sleeping_thread_list, &t->elem);
+	earliest_sleeping_thread_wakeup_time=wakeup_ticks;
+}
+else 
+{
+	if(wakeup_ticks<earliest_sleeping_thread_wakeup_time)
+	{
+		earliest_sleeping_thread_wakeup_time=wakeup_ticks;
+	}
+	list_insert_ordered(&sleeping_thread_list,&t->elem,earliest_sleep_time_thread,(void *)NULL);
+}
+lock_release(&thread_sleep);
+thread_block ();
+intr_enable();
+  
+}
+/* Pops thread from sleeping queue*/
+void thread_wake_from_sleep_queue()
+{
+  while(earliest_sleeping_thread_wakeup_time>0)
+    {
         struct thread *pn=list_entry (list_front (&sleeping_thread_list), struct thread, elem);
+
         if(pn->thread_wakeup_time==timer_ticks())
+            
             {
                 struct thread *t=list_entry (list_pop_front (&sleeping_thread_list), struct thread, elem);
                 if(list_size(&sleeping_thread_list) > 0)
                 {
-
                     struct thread *tn=list_entry (list_front (&sleeping_thread_list), struct thread, elem);
                     earliest_sleeping_thread_wakeup_time=tn->thread_wakeup_time;
 
                 }
-            else
-                {
+                else
                     earliest_sleeping_thread_wakeup_time=0;
-
-                }
-                thread_unblock(t);
+                
+                  thread_unblock(t);
             }
         else 
-        {
             break;
-        }
     }
 }
-/* Pops thread from sleeping queue*/
-void thread_wake_from_sleep_queue(){
-enum intr_level old_level;
- old_level = intr_disable ();
-//printf ("List size now %d \n",list_size(&sleeping_thread_list));
-struct thread *t=list_entry (list_pop_front (&sleeping_thread_list), struct thread, elem);
-//printf("Thread to unblock with waiting time %lld \n",t-> thread_wakeup_time);
-//printf ("List size now %d \n",list_size(&sleeping_thread_list));
-if(list_size(&sleeping_thread_list) > 0)
-{
-	struct thread *pn=list_entry (list_front (&sleeping_thread_list), struct thread, elem);
-	earliest_sleeping_thread_wakeup_time=pn->thread_wakeup_time;
-	intr_set_level (old_level);
-	thread_unblock(t);
-//printf("Thread to unblock with next %lld \n",tn-> thread_wakeup_time);
-}
-else
-{
-	earliest_sleeping_thread_wakeup_time=0;
-	intr_set_level (old_level);
-//printf("inside else \n");
-	thread_unblock(t);
-}
-} 
 
 /* Prints thread statistics. */
 void
