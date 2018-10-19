@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed_point.h"
 #include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
@@ -286,12 +287,8 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t); // put thread
 
-<<<<<<< HEAD
 	//if (priority > thread_current ()->priority && thread_current() != idle_thread)
 	//    thread_yield ();
-
-=======
->>>>>>> upstream/master
   return tid;
 }
 
