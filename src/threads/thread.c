@@ -607,7 +607,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->original_priority = priority;
-  t->waitingforlock = NULL;
   list_init (&t->locks);
   t->magic = THREAD_MAGIC;
 

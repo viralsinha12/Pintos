@@ -211,31 +211,14 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  struct lock *currentlock = lock;
   struct thread *tcurrent = thread_current();
-
-  //putting the lock in the waiting list of the current thread
-  tcurrent->waitingforlock = lock;
-
-  if(lock->holder == NULL) {
-    currentlock->priority = tcurrent->priority;
-  }
-
   //donating priority for the threads as well as the threads which are holding the locks
   if(lock->holder != NULL && lock->holder->priority < tcurrent->priority) {
     thread_donate_priority(lock->holder, tcurrent->priority);
-    if (currentlock->priority < tcurrent->priority) {
-      currentlock->priority = tcurrent->priority;
-    }
 }
-
   sema_down (&lock->semaphore);
-
   //giving the lock to the current thread
   lock->holder = thread_current ();
-  //Current thread is no more waiting for any locks
-  lock->holder->waitingforlock = NULL;
-
   //Inserting the lock held by the current thread in the list of its lock list in the order of priority
   list_insert_ordered(&(lock->holder->locks), &(lock->lockelem),comparator_greater_lock_priority, NULL);
 }
