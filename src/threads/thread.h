@@ -91,8 +91,15 @@ struct thread
     int64_t thread_ticks;               /* time the thread is supposed to sleep in ticks*/
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t thread_wakeup_time;          /* time at which the thread wakes */
+    int original_priority;               /* Priority, before donation */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+
+    struct lock *waitingforlock;         // which thread is waiting for the lock now
+    struct  list locks;
+
+    int nice;
+    int recent_cpu;
 
    
 #ifdef USERPROG
