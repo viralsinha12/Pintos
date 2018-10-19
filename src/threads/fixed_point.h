@@ -48,7 +48,7 @@ int subfp(int x, int y)
 
 int mulfp(int x, int y)
 {
-	return(((int64_t) x)*(y/f));
+	return ((int64_t)x)*y/f;
 }
 
 int mulfp_int(int x, int n)
@@ -58,7 +58,7 @@ int mulfp_int(int x, int n)
 
 int divfp(int x, int y)
 {
-	return(((int64_t) x)*(f/y));
+	return ((int64_t) x)*f/y ;
 }
 
 int divfp_int(int x, int n)
