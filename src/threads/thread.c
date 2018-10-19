@@ -278,8 +278,8 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t); // put thread
 
-	if (priority > thread_current ()->priority && thread_current() != idle_thread)
-	    thread_yield ();
+	//if (priority > thread_current ()->priority && thread_current() != idle_thread)
+	//    thread_yield ();
 
   return tid;
 }
