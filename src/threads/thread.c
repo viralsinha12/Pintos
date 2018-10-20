@@ -61,7 +61,6 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 //#define F (1 << 14)
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
-//#define load_avg 0;
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -80,7 +79,7 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 static int64_t earliest_sleeping_thread_wakeup_time;
-//static int load_avg;
+//static int load_average;
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -156,6 +155,47 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
 #endif
   else
     kernel_ticks++;
+
+  if(thread_mlfqs)
+  {
+	if(strcmp(t->name,"idle")==0)
+	{
+		t->recent_cpu = t->recent_cpu;
+	}
+	else if( t->status == THREAD_RUNNING)
+	{
+		t->recent_cpu = addfp_int(t->recent_cpu,1); 
+	}
+	if( timer_ticks() % TIME_SLICE == 0)
+	{
+		struct list_elem *e;
+		for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
+    		{
+      			struct thread *alt = list_entry (e, struct thread, allelem);
+			alt->priority = PRI_MAX - convert_rfp_integer( divfp_int( alt->recent_cpu,4 )-( (alt->nice)*2 ) );
+		}		
+  	}
+	if( timer_ticks() % 100 == 0)
+	{
+		if(strcmp(running_thread()->name,"idle")==0)
+		{	
+			load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list)),60);
+		}
+		else
+		{
+			load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list+1)),60);	
+		}
+		struct list_elem *e;
+		int n,d;
+		n=mulfp_int(load_average,2);
+		d=addfp_int(n,1);
+		for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
+    		{
+      			struct thread *alt = list_entry (e, struct thread, allelem);
+			alt->recent_cpu = addfp_int( mulfp( divfp(n,d) , alt->recent_cpu ) , alt->nice );
+		}
+	}
+  } 
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -512,14 +552,15 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-return 0;
+return( mulfp_int(load_average,100) );
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  return 0;
+  struct thread *current = thread_current();
+  return ( mulfp_int(current->recent_cpu,100)) ;
 }
 
 
@@ -608,7 +649,26 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
-  t->priority = priority;
+  if(!thread_mlfqs)
+  {
+  	t->priority = priority;
+  }
+  if(thread_mlfqs)
+  {
+  	if(strcmp(t->name,"main")==0)
+	{
+		t->recent_cpu=0;
+	}
+	else
+	{
+		struct thread *current = thread_current();
+		int n,d;
+		n=mulfp_int(load_average,2);
+		d=addfp_int(n,1);
+		current->recent_cpu = addfp_int( mulfp( divfp(n,d) , current->recent_cpu ) , current->nice );
+		t->priority = PRI_MAX - convert_rfp_integer( divfp_int( t->recent_cpu,4 )-( (t->nice)*2 ) );
+	}	
+  }
   t->original_priority = priority;
   list_init (&t->locks);
   t->magic = THREAD_MAGIC;

@@ -46,6 +46,16 @@ int subfp(int x, int y)
 	return(x-y);
 }
 
+int addfp_int(int x, int n)
+{
+	return( x + (n*f) );
+}
+
+int subfp_int(int x , int n)
+{
+	return( x - (n*f) );
+}
+
 int mulfp(int x, int y)
 {
 	return ((int64_t)x)*y/f;

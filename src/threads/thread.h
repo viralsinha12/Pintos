@@ -100,6 +100,7 @@ struct thread
 
     int nice;
     int recent_cpu;
+    
 
    
 #ifdef USERPROG
@@ -115,6 +116,8 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+//System wide load average
+int64_t load_average;
 
 void thread_init (void);
 void thread_start (void);
