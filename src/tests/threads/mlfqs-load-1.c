@@ -20,7 +20,6 @@ test_mlfqs_load_1 (void)
   int64_t start_time;
   int elapsed;
   int load_avg;
-  int i=0;
   
   ASSERT (thread_mlfqs);
 
@@ -30,7 +29,6 @@ test_mlfqs_load_1 (void)
   for (;;) 
     {
       load_avg = thread_get_load_avg ();
-	printf("load average:%d and iter:%d\n",load_avg,i++);
       ASSERT (load_avg >= 0);
       elapsed = timer_elapsed (start_time) / TIMER_FREQ;
       if (load_avg > 100)
