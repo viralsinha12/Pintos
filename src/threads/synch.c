@@ -211,16 +211,28 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  struct thread *tcurrent = thread_current();
-  //donating priority for the threads as well as the threads which are holding the locks
-  if(lock->holder != NULL && lock->holder->priority < tcurrent->priority) {
-    thread_donate_priority(lock->holder, tcurrent->priority);
+struct thread *tcurrent = thread_current();
+struct lock *clock = lock;
+struct thread *lockholder = lock->holder; 
+tcurrent->lockwaiter = lock;
+if(lockholder == NULL) {
+    clock->priority = tcurrent->priority;
 }
-  sema_down (&lock->semaphore);
-  //giving the lock to the current thread
-  lock->holder = thread_current ();
-  //Inserting the lock held by the current thread in the list of its lock list in the order of priority
-  list_insert_ordered(&(lock->holder->locks), &(lock->lockelem),comparator_greater_lock_priority, NULL);
+while (lockholder != NULL && lockholder->priority < tcurrent->priority) {
+if (clock->priority < tcurrent->priority) {
+      clock->priority = tcurrent->priority;
+}
+thread_donate_priority(lockholder, tcurrent->priority);
+clock = lockholder->lockwaiter;
+if(clock != NULL) 
+lockholder = clock->holder;
+else
+break;
+}
+sema_down (&lock->semaphore);
+lock->holder = thread_current ();
+lock->holder->lockwaiter = NULL;
+list_insert_ordered(&(lock->holder->locks), &(lock->lockelem),comparator_greater_lock_priority, NULL);
 }
 
 
@@ -255,15 +267,20 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
-  struct thread *t_current = thread_current();
-  lock->holder = NULL;
-  sema_up (&lock->semaphore);
-  list_remove (&lock->lockelem);
-
-  //once the lock is released and no more locks are available then we are restoring the original priority
-  if (list_empty(&t_current->locks)) {
-    thread_donate_priority(t_current, t_current->original_priority);
-  }
+struct thread *t_current = thread_current();
+lock->holder = NULL;
+sema_up (&lock->semaphore);
+list_remove (&lock->lockelem);
+//Priority restoration after main thread is run
+if (list_empty(&t_current->locks)) {
+thread_donate_priority(t_current, t_current->original_priority);
+}
+  else {
+//Priority of locks keep on changing with every lock_acquire invocation
+list_sort(&(t_current->locks), comparator_greater_lock_priority, NULL);
+struct lock *highest_pri_lock = list_entry( list_front(&(t_current->locks)), struct lock, lockelem );
+thread_donate_priority(t_current, highest_pri_lock->priority);
+}
 }
 
 /* Returns true if the current thread holds LOCK, false

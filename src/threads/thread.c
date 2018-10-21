@@ -133,8 +133,6 @@ thread_start (void)
 
 /* Called by the timer interrupt handler at each timer tick.
    Thus, this function runs in an external interrupt context. */
-/* Called by the timer interrupt handler at each timer tick.
-   Thus, this function runs in an external interrupt context. */
 void
 thread_tick (void) 
 {
@@ -159,58 +157,46 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
   if(thread_mlfqs)
   {
 	
-	if(strcmp(t->name,"idle")==0)
-	{
-		t->recent_cpu = t->recent_cpu;
-	}
-	else //if( t->status == THREAD_RUNNING)
-	{
-		//printf("running thread name\");
-		t->recent_cpu = addfp_int(t->recent_cpu,1);
-		//printf("running thread name:%s\nthread's recent cpu:%s\n",t->name,t->recent_cpu); 
-	}
-	if( timer_ticks() % TIME_SLICE == 0)
-	{
-		struct list_elem *e;
-		for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
-    		{
-      			struct thread *alt = list_entry (e, struct thread, allelem);
-			alt->priority = PRI_MAX - convert_rfp_integer( divfp_int( alt->recent_cpu,4 )-( (alt->nice)*2 ) );
-		}		
-  	}
-	if( timer_ticks() % 100 == 0)
-	{
-		//printf("timerticks%d\n",timer_ticks());
-		if(strcmp(running_thread()->name,"idle")==0)
-		{	
-			//printf("idle");
-			load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list)),60);
-		}
-		else
-		{
-			//printf("name of thread:%s", running_thread()->name);
-			//printf("not idle,readylist size: %d\n",list_size(&ready_list));
-			//int a,b;
-			//a= divfp_int(mulfp_int(load_average,59),60);
-			//b= divfp_int(convert_integer_fp(list_size(&ready_list)+1),60);
-			//printf("load average 1st term: %d\n",a);
-			//printf("load average 2nd term: %d\n",b);
-			load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list)+1),60);
-			//printf("load
-				
-		}
-		struct list_elem *e;
-		int n,d;
-		n=mulfp_int(load_average,2);
-		d=addfp_int(n,1);
-		for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
-    		{
-      			struct thread *alt = list_entry (e, struct thread, allelem);
-			alt->recent_cpu = addfp_int( mulfp( divfp(n,d) , alt->recent_cpu ) , alt->nice );
-			//printf("recent cpu for thread %s is:%d\n",alt->name,alt->recent);
-
-		}
-	}
+	     if(strcmp(t->name,"idle")==0)
+	     {
+		      t->recent_cpu = t->recent_cpu;
+	     }
+	     else 
+	     {
+      		t->recent_cpu = addfp_int(t->recent_cpu,1);
+    	 }
+	
+      if( timer_ticks() % TIME_SLICE == 0)
+	     {
+		      struct list_elem *e;
+		      for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
+    		  {
+      		    	struct thread *alt = list_entry (e, struct thread, allelem);
+			         alt->priority = PRI_MAX - convert_rfp_integer( divfp_int( alt->recent_cpu,4 )-( (alt->nice)*2 ) );
+		      }		
+        }
+    
+    	if( timer_ticks() % 100 == 0)
+	     {
+		      if(strcmp(running_thread()->name,"idle")==0)
+      		{	
+			         load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list)),60);
+		      }
+      		else
+		      {
+			         load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list)+1),60);				
+		      }
+		      
+          struct list_elem *e;
+		      int n,d;
+		      n=mulfp_int(load_average,2);
+		      d=addfp_int(n,1);
+		      for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
+    		  {
+      			   struct thread *alt = list_entry (e, struct thread, allelem);
+			         alt->recent_cpu = addfp_int( mulfp( divfp(n,d) , alt->recent_cpu ) , alt->nice );
+      		}
+	     }
   } 
 
   /* Enforce preemption. */

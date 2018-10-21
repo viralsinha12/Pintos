@@ -95,8 +95,8 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-    struct lock *waitingforlock;         // which thread is waiting for the lock now
-    struct  list locks;
+    struct lock *lockwaiter;         // which thread is waiting for the lock now
+    struct list locks;
 
     int nice;
     int recent_cpu;
