@@ -2,7 +2,7 @@
 
 #define f 16384// 2^14
 
-int convert_integer_fp(int x);//convert x to fixed point number
+int convert_integer_fp(int n);//convert x to fixed point number
 int convert_zfp_integer(int x);//convert x to integer(rounding toward zero) 
 int convert_rfp_integer(int x);//convert x to integer(rounding to nearest)
 int addfp(int x,int y);//add two fixed point numbers
@@ -28,11 +28,11 @@ int convert_rfp_integer(int x)
 {
 	if(x>=0)
 	{
-		return (x+(f/2));
+		return (x+(f/2)) / f ;
 	}
-	else
+	else if(x<=0)
 	{
-		return (x-(f/2));
+		return (x-(f/2)) / f;
 	}
 }
 

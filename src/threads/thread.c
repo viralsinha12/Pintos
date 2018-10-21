@@ -158,13 +158,16 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
 
   if(thread_mlfqs)
   {
+	
 	if(strcmp(t->name,"idle")==0)
 	{
 		t->recent_cpu = t->recent_cpu;
 	}
-	else if( t->status == THREAD_RUNNING)
+	else //if( t->status == THREAD_RUNNING)
 	{
-		t->recent_cpu = addfp_int(t->recent_cpu,1); 
+		//printf("running thread name\");
+		t->recent_cpu = addfp_int(t->recent_cpu,1);
+		//printf("running thread name:%s\nthread's recent cpu:%s\n",t->name,t->recent_cpu); 
 	}
 	if( timer_ticks() % TIME_SLICE == 0)
 	{
@@ -177,13 +180,24 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
   	}
 	if( timer_ticks() % 100 == 0)
 	{
+		//printf("timerticks%d\n",timer_ticks());
 		if(strcmp(running_thread()->name,"idle")==0)
 		{	
+			//printf("idle");
 			load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list)),60);
 		}
 		else
 		{
-			load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list+1)),60);	
+			//printf("name of thread:%s", running_thread()->name);
+			//printf("not idle,readylist size: %d\n",list_size(&ready_list));
+			//int a,b;
+			//a= divfp_int(mulfp_int(load_average,59),60);
+			//b= divfp_int(convert_integer_fp(list_size(&ready_list)+1),60);
+			//printf("load average 1st term: %d\n",a);
+			//printf("load average 2nd term: %d\n",b);
+			load_average = divfp_int(mulfp_int(load_average,59),60) + divfp_int(convert_integer_fp(list_size(&ready_list)+1),60);
+			//printf("load
+				
 		}
 		struct list_elem *e;
 		int n,d;
@@ -193,6 +207,8 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
     		{
       			struct thread *alt = list_entry (e, struct thread, allelem);
 			alt->recent_cpu = addfp_int( mulfp( divfp(n,d) , alt->recent_cpu ) , alt->nice );
+			//printf("recent cpu for thread %s is:%d\n",alt->name,alt->recent);
+
 		}
 	}
   } 
@@ -495,6 +511,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority)
 {
+  //printf("hi");
   struct thread *t_current = thread_current();
   if (t_current->priority == t_current->original_priority) {
     t_current->priority = new_priority;
@@ -516,6 +533,9 @@ thread_set_priority (int new_priority)
 // priority donate function//
 void thread_donate_priority(struct thread *current,int new_priority)
 {
+  if(!thread_mlfqs)
+{
+ // printf("hello");
   current->priority = new_priority;
   if (!list_empty (&ready_list)) {
     struct thread *next = list_entry(list_begin(&ready_list), struct thread, elem);
@@ -523,6 +543,7 @@ void thread_donate_priority(struct thread *current,int new_priority)
       thread_yield();
     }
   }
+}
 }
 
 /* Returns the current thread's priority. */
@@ -552,7 +573,7 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-return( mulfp_int(load_average,100) );
+  return( convert_rfp_integer( mulfp_int(load_average,100) ) );
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -560,7 +581,7 @@ int
 thread_get_recent_cpu (void) 
 {
   struct thread *current = thread_current();
-  return ( mulfp_int(current->recent_cpu,100)) ;
+  return ( convert_rfp_integer ( mulfp_int(current->recent_cpu,100) ) ) ;
 }
 
 
@@ -658,6 +679,7 @@ init_thread (struct thread *t, const char *name, int priority)
   	if(strcmp(t->name,"main")==0)
 	{
 		t->recent_cpu=0;
+		printf("main");
 	}
 	else
 	{
@@ -667,6 +689,8 @@ init_thread (struct thread *t, const char *name, int priority)
 		d=addfp_int(n,1);
 		current->recent_cpu = addfp_int( mulfp( divfp(n,d) , current->recent_cpu ) , current->nice );
 		t->priority = PRI_MAX - convert_rfp_integer( divfp_int( t->recent_cpu,4 )-( (t->nice)*2 ) );
+		//printf("thread name:%s",t->name);
+		//printf("priority:%d\n",t->priority);
 	}	
   }
   t->original_priority = priority;
