@@ -33,7 +33,7 @@
 #include "threads/thread.h"
 static bool comparator_greater_thread_priority(const struct list_elem*, const struct list_elem*, void *);
 static bool comparator_greater_lock_priority(const struct list_elem*, const struct list_elem*, void *);
-
+bool thread_mlfqs;
 
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
    nonnegative integer along with two atomic operators for
@@ -212,6 +212,7 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
 
 struct thread *tcurrent = thread_current();
+if (!thread_mlfqs){
 struct lock *clock = lock;
 struct thread *lockholder = lock->holder; 
 tcurrent->lockwaiter = lock;
@@ -233,6 +234,11 @@ sema_down (&lock->semaphore);
 lock->holder = thread_current ();
 lock->holder->lockwaiter = NULL;
 list_insert_ordered(&(lock->holder->locks), &(lock->lockelem),comparator_greater_lock_priority, NULL);
+}
+else{
+sema_down (&lock->semaphore);
+lock->holder = thread_current ();
+}
 }
 
 
@@ -268,10 +274,13 @@ lock_release (struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
 
 struct thread *t_current = thread_current();
+
 lock->holder = NULL;
 sema_up (&lock->semaphore);
+if(!thread_mlfqs){
 list_remove (&lock->lockelem);
 //Priority restoration after main thread is run
+
 if (list_empty(&t_current->locks)) {
 thread_donate_priority(t_current, t_current->original_priority);
 }
@@ -280,9 +289,9 @@ thread_donate_priority(t_current, t_current->original_priority);
 list_sort(&(t_current->locks), comparator_greater_lock_priority, NULL);
 struct lock *highest_pri_lock = list_entry( list_front(&(t_current->locks)), struct lock, lockelem );
 thread_donate_priority(t_current, highest_pri_lock->priority);
-}
-}
+}}
 
+}
 /* Returns true if the current thread holds LOCK, false
    otherwise.  (Note that testing whether some other thread holds
    a lock would be racy.) */

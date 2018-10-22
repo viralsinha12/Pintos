@@ -131,19 +131,22 @@ thread_start (void)
   sema_down (&idle_started);
 }
 
+static bool
+great_priority_thread (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+  struct thread *thread_a = list_entry(a, struct thread, elem);
+  struct thread *thread_b = list_entry(b, struct thread, elem);
+
+  return thread_a->priority > thread_b->priority;
+}
+
 /* Called by the timer interrupt handler at each timer tick.
    Thus, this function runs in an external interrupt context. */
 void
 thread_tick (void) 
 {
   struct thread *t = thread_current ();
-  
-if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping_thread_list)!=0))
-{
- // printf("\nearly sleeping time %d",earliest_sleeping_thread_wakeup_time);
-  //printf("\ntimer_ticks %d",timer_ticks());
-  thread_wake_from_sleep_queue();
-}
+
   /* Update statistics. */
   if (t == idle_thread)
     idle_ticks++;
@@ -154,9 +157,16 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
   else
     kernel_ticks++;
 
+  if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping_thread_list)!=0))
+{
+ // printf("\nearly sleeping time %d",earliest_sleeping_thread_wakeup_time);
+  //printf("\ntimer_ticks %d",timer_ticks());
+  thread_wake_from_sleep_queue();
+}
+
   if(thread_mlfqs)
   {
-	
+//	     list_sort(&all_list, great_priority_thread, NULL);
 	     if(strcmp(t->name,"idle")==0)
 	     {
 		      t->recent_cpu = t->recent_cpu;
@@ -166,7 +176,7 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
       		t->recent_cpu = addfp_int(t->recent_cpu,1);
     	 }
 	
-      if( timer_ticks() % TIME_SLICE == 0)
+      if(timer_ticks() % TIME_SLICE == 0)
 	     {
 		      struct list_elem *e;
 		      for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
@@ -198,6 +208,7 @@ if((earliest_sleeping_thread_wakeup_time<=timer_ticks()) && (list_size(&sleeping
       		}
 	     }
   } 
+
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -233,7 +244,7 @@ else
 }
 lock_release(&thread_sleep);
 thread_block ();
-intr_enable();
+//intr_enable();
   
 }
 /* Pops thread from sleeping queue*/
@@ -353,14 +364,7 @@ thread_block (void)
   intr_set_level (old_level);
 }
 
-static bool
-great_priority_thread (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
-{
-  struct thread *thread_a = list_entry(a, struct thread, elem);
-  struct thread *thread_b = list_entry(b, struct thread, elem);
 
-  return thread_a->priority > thread_b->priority;
-}
 
 
 /* Transitions a blocked thread T to the ready-to-run state.
